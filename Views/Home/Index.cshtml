@@ -1,0 +1,213 @@
+﻿@model IEnumerable<Message>
+@{
+    ViewData["Title"] = "";
+    var userId = Context.Session.GetInt32("UserId");
+}
+
+<div class="container">
+    <h1>Welcome to the Guest Book!</h1>
+
+    <div id="authContainer">
+        @if (userId == null)
+        {
+            <button class="btn btn-primary" id="loginButton">Вход в систему</button>
+            <button class="btn btn-secondary" id="registerButton">Регистрация</button>
+
+            <div id="loginFormContainer" class="form-container" style="display:none;">
+                @await Html.PartialAsync("~/Views/Account/_LoginPartial.cshtml", new LoginViewModel())
+                <button class="btn btn-danger mt-2 hideButton">Скрыть вход</button>
+            </div>
+            <div id="registerFormContainer" class="form-container" style="display:none;">
+                @await Html.PartialAsync("~/Views/Account/_RegisterPartial.cshtml", new RegisterViewModel())
+                <button class="btn btn-danger mt-2 hideButton">Скрыть регистрацию</button>
+            </div>
+        }
+        else
+        {
+            <form id="addMessageForm" class="mb-4">
+                <div class="form-group">
+                    <label for="Name">Имя:</label>
+                    <input type="text" id="Name" name="Name" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label for="Content">Отзыв:</label>
+                    <textarea id="Content" name="Content" class="form-control" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="Email">Email:</label>
+                    <input type="email" id="Email" name="Email" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label for="WWW">WWW:</label>
+                    <input type="url" id="WWW" name="WWW" class="form-control" />
+                </div>
+                <button type="submit" class="btn btn-success">Добавить отзыв</button>
+            </form>
+            <button id="logoutButton" class="btn btn-secondary">Выход</button>
+            <button id="myMessagesButton" class="btn btn-info">Мои сообщения</button>
+        }
+    </div>
+
+    <div id="reviewsContainer">
+        @foreach (var message in Model)
+        {
+            <div class="card mb-3">
+                <div class="card-header">
+                    <strong>@message.User.Name</strong>
+                    <span class="float-right">@message.MessageDate</span>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">@message.Content</p>
+                    <p class="card-text"><small class="text-muted">@message.Email @message.WWW</small></p>
+                </div>
+            </div>
+        }
+    </div>
+
+    <button id="showAllMessagesButton" class="btn btn-info mt-3">Прочесть все сообщения</button>
+    <button id="hideMessagesButton" class="btn btn-warning mt-3" style="display: none;">Скрыть сообщения</button>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            
+            function toggleContainer(button, containerToShow) {
+                $(button).click(function () {
+                    $(containerToShow).toggle();
+                    $(".form-container").not(containerToShow).hide();
+                });
+            }
+
+            toggleContainer('#loginButton', '#loginFormContainer');
+            toggleContainer('#registerButton', '#registerFormContainer');
+            $('.hideButton').click(function () {
+                $(this).closest('.form-container').hide();
+            });
+
+           
+            function ajaxFormSubmit(formSelector, url, onSuccess) {
+                $(formSelector).on('submit', function (e) {
+                    e.preventDefault();
+                    var formData = $(this).serialize();
+
+                    $.ajax({
+                        type: 'POST',
+                        url: url,
+                        data: formData,
+                        success: onSuccess,
+                        error: function (xhr) {
+                            alert('Ошибка: ' + xhr.responseText);
+                        }
+                    });
+                });
+            }
+
+            ajaxFormSubmit('#loginForm', '@Url.Action("Login", "Account")', function (response) {
+                if (response.success) {
+                    location.reload();
+                } else {
+                    $('#loginFormContainer').html(response);
+                }
+            });
+
+            ajaxFormSubmit('#registerForm', '@Url.Action("Register", "Account")', function (response) {
+                if (response.success) {
+                    location.reload();
+                } else {
+                    $('#registerFormContainer').html(response);
+                }
+            });
+
+           
+            $('#addMessageForm').on('submit', function (e) {
+                e.preventDefault();
+                var formData = {
+                    Name: $('#Name').val(),
+                    Content: $('#Content').val(),
+                    Email: $('#Email').val(),
+                    WWW: $('#WWW').val()
+                };
+
+                $.ajax({
+                    type: 'POST',
+                    url: '@Url.Action("AddMessage", "Home")',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function (response) {
+                        if (response) {
+                            $('#reviewsContainer').html(response);
+                            $('#addMessageForm')[0].reset();
+                        } else {
+                            alert('Ошибка при добавлении сообщения');
+                        }
+                    },
+                    error: function (xhr) {
+                        alert('Ошибка при добавлении сообщения: ' + xhr.responseText);
+                    }
+                });
+            });
+
+           
+            $('#logoutButton').click(function () {
+                $.ajax({
+                    type: 'POST',
+                    url: '@Url.Action("Logout", "Account")',
+                    success: function (response) {
+                        if (response.success) {
+                            location.reload();
+                        }
+                    },
+                    error: function (xhr) {
+                        alert('Ошибка при выходе: ' + xhr.responseText);
+                    }
+                });
+            });
+
+           
+            $('#myMessagesButton').click(function () {
+                $.ajax({
+                    type: 'GET',
+                    url: '@Url.Action("GetUserMessages", "Home")',
+                    success: function (response) {
+                        if (response) {
+                            $('#reviewsContainer').html(response);
+                        } else {
+                            alert('Ошибка при загрузке сообщений');
+                        }
+                    },
+                    error: function (xhr) {
+                        alert('Ошибка при загрузке сообщений: ' + xhr.responseText);
+                    }
+                });
+            });
+
+          
+            $('#showAllMessagesButton').click(function () {
+                $.ajax({
+                    type: 'GET',
+                    url: '@Url.Action("Index", "Home")',
+                    success: function (response) {
+                        if (response) {
+                            $('#reviewsContainer').html(response);
+                            $('#showAllMessagesButton').hide();
+                            $('#hideMessagesButton').show();
+                        } else {
+                            alert('Ошибка при загрузке всех сообщений');
+                        }
+                    },
+                    error: function (xhr) {
+                        alert('Ошибка при загрузке всех сообщений: ' + xhr.responseText);
+                    }
+                });
+            });
+
+            
+            $('#hideMessagesButton').click(function () {
+                $('#reviewsContainer').html('');
+                $('#showAllMessagesButton').show();
+                $('#hideMessagesButton').hide();
+            });
+        });
+    </script>
+}

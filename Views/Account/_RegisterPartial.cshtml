@@ -1,0 +1,27 @@
+﻿@model RegisterViewModel
+
+<form id="registerForm" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-group">
+        <label for="registerName">Логин:</label>
+        <input type="text" class="form-control" id="registerName" name="Name" asp-for="Name" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label for="registerPassword">Пароль:</label>
+        <input type="password" class="form-control" id="registerPassword" name="Password" asp-for="Password" />
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label for="registerConfirmPassword">Подтверждение пароля:</label>
+        <input type="password" class="form-control" id="registerConfirmPassword" name="ConfirmPassword" asp-for="ConfirmPassword" />
+        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Регистрация</button>
+    <a href="javascript:void(0);" class="btn btn-secondary" id="loginButton">Вход в систему</a>
+</form>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger mt-3">@ViewBag.Error</div>
+}

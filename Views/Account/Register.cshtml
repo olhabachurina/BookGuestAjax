@@ -1,0 +1,40 @@
+﻿@model RegisterViewModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<h2>Регистрация</h2>
+
+<div id="registerFormContainer">
+    @await Html.PartialAsync("~/Views/Account/_RegisterPartial.cshtml", Model)
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#registerForm').on('submit', function (e) {
+                e.preventDefault();
+
+                var formData = $(this).serialize();
+
+                $.ajax({
+                    type: 'POST',
+                    url: '@Url.Action("Register", "Account")',
+                    data: formData,
+                    success: function (response) {
+                        console.log(response); // Логирование ответа
+                        if (response.success) {
+                            console.log('Redirecting to ' + response.redirectUrl); // Логирование перед редиректом
+                            window.location.href = response.redirectUrl;
+                        } else {
+                            $('#registerFormContainer').html(response);
+                        }
+                    },
+                    error: function () {
+                        alert('Ошибка при регистрации.');
+                    }
+                });
+            });
+        });
+    </script>
+}
